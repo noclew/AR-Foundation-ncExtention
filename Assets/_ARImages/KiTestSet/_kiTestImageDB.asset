@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 848409ee8ba454f42a5ddff137688a27, type: 3}
+  m_Name: _kiTestImageDB
+  m_EditorClassIdentifier: 
+  m_GuidLow: 5033210523542108378
+  m_GuidHigh: 312753392938290351
+  m_Images:
+  - m_SerializedGuid:
+      m_GuidLow: 4692193834755008505
+      m_GuidHigh: 16423616592684421042
+    m_SerializedTextureGuid:
+      m_GuidLow: 13403913796665121138
+      m_GuidHigh: 6296718387825237688
+    m_Size: {x: 0.2, y: 0.15}
+    m_SpecifySize: 1
+    m_Name: brick_200_150
+    m_Texture: {fileID: 2800000, guid: c22e99724494ba04b85efe2403706257, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 4708203320838810906
+      m_GuidHigh: 4306231486310741427
+    m_SerializedTextureGuid:
+      m_GuidLow: 3527461501969528317
+      m_GuidHigh: 8219592559923022955
+    m_Size: {x: 0.2, y: 0.14038801}
+    m_SpecifySize: 1
+    m_Name: forest_200_140
+    m_Texture: {fileID: 2800000, guid: f7c275fd0f8b30f46bcca74ce2db1172, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 5301554060430807554
+      m_GuidHigh: 15581753399148956307
+    m_SerializedTextureGuid:
+      m_GuidLow: 2946643160584077807
+      m_GuidHigh: 4279741566179608378
+    m_Size: {x: 0.15, y: 0.1}
+    m_SpecifySize: 1
+    m_Name: river_150_100
+    m_Texture: {fileID: 2800000, guid: b272c1ef945728e43a079c8647b2643b, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 5291877757100514261
+      m_GuidHigh: 14447090760890305416
+    m_SerializedTextureGuid:
+      m_GuidLow: 4045517226486298872
+      m_GuidHigh: 11147403028458045496
+    m_Size: {x: 0.16, y: 0.19973625}
+    m_SpecifySize: 1
+    m_Name: ship_160_200
+    m_Texture: {fileID: 2800000, guid: c17078f8907b382438005b2ffe87b39a, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 5532476988368737043
+      m_GuidHigh: 1050121157821066424
+    m_SerializedTextureGuid:
+      m_GuidLow: 17830879966390566112
+      m_GuidHigh: 14213351382168930794
+    m_Size: {x: 0.2, y: 0.15985915}
+    m_SpecifySize: 1
+    m_Name: trash_200_160
+    m_Texture: {fileID: 2800000, guid: 7d56bce002dbf774ea89fcc9c6f73fc5, type: 3}

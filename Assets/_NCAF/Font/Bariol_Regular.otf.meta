@@ -1,0 +1,25 @@
+fileFormatVersion: 2
+guid: c7595fe4c69f73b409e4408cf56acae9
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Bariol
+  fontNames:
+  - Bariol
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 9d490d31e95a0b549aec842882e439b4, type: 3}
+  - {fileID: 12800000, guid: 16a6a3e46e343a241be3a34c2e166e19, type: 3}
+  - {fileID: 12800000, guid: 4176ff4a16ccdc049bafd0f6b8994c83, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
