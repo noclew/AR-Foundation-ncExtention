@@ -12,7 +12,6 @@ namespace NcAF
     public class NcafARImageInfo : MonoBehaviour
     {
         public bool IsLocalModelActive { get; set; }
-
         public ARTrackedImage m_arTrackedImage { get; set; }
         public bool m_isFullyTracking { get => IsFullyTracking(); }
         public TrackingState TrackingState { get => m_arTrackedImage ? m_arTrackedImage.trackingState : TrackingState.None; }
@@ -43,7 +42,7 @@ namespace NcAF
         // Start is called before the first frame update
         void Start()
         {
-            NcafMainController.Instance.AddARImageInfo(this);
+            //NcafMainController.Instance.AddARImageInfo(this);
         }
 
         // Update is called once per frame

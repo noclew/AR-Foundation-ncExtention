@@ -7,6 +7,7 @@ using NcCommon;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 namespace NcAF
 {
@@ -114,17 +115,51 @@ namespace NcAF
                 Debug.LogWarning("WARNING>> AR Camera is not properly set. Main scene camera is used for now");
             }
             m_refTracker = new ReferenceTracker(m_ReferencePointManager);
-            // set default visualization mode for image target models
-        }
 
-        // Update is called once per frame
-        private void Update()
-        {
+            List<NcafARImageInfo> results = new List<NcafARImageInfo>();
+            var allGameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
+            for (int j = 0; j < allGameObjects.Length; j++)
+            {
+                var go = allGameObjects[j];
+                results.AddRange(go.GetComponentsInChildren<NcafARImageInfo>(true));
+            }
+
+            foreach (NcafARImageInfo info in results)
+            {
+                AddARImageInfo(info);
+            }
+
+
+            // set default visualization mode for image target models
             // Set visualizations
             SetARImageModelsActive(m_isARImageModelActive);
             SetARImageViz(m_isARImageVisEnabled);
             SetARPlaneViz(m_isPlaneVisEnabled);
             SetRefPointVis(m_isRefPointVisEnabled);
+        }
+        //IEnumerator CheckReadyStart()
+        //{
+        //    List<NcafARImageInfo> results = new List<NcafARImageInfo>();
+        //    var allGameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
+        //    for (int j = 0; j < allGameObjects.Length; j++)
+        //    {
+        //        var go = allGameObjects[j];
+        //        results.AddRange(go.GetComponentsInChildren<NcafARImageInfo>(true));
+        //    }
+
+
+
+
+        //    var infos = FindObjectsOfType<NcafARImageInfo>();
+        //    yield return new WaitForSeconds(waitTime);
+        //    print("WaitAndPrint " + Time.time);
+        //}
+
+        // Update is called once per frame
+        private void Update()
+        {
+
+
 
             if (m_isSanityChecked == false)
             {
@@ -781,11 +816,9 @@ namespace NcAF
         public void TogglePlaneViz()
         {
             m_isPlaneVisEnabled = !m_isPlaneVisEnabled;
+            SetARPlaneViz(m_isPlaneVisEnabled);
         }
-        public void ToggleARImageViz()
-        {
-            m_isARImageVisEnabled = !m_isARImageVisEnabled;
-        }
+
         public void ToggleARImageModelActive()
         {
             m_isARImageModelActive = !m_isARImageModelActive;
@@ -796,6 +829,11 @@ namespace NcAF
         {
             m_isRefPointVisEnabled = !m_isRefPointVisEnabled;
             SetRefPointVis(m_isRefPointVisEnabled);
+        }
+        public void ToggleARImageViz()
+        {
+            m_isARImageVisEnabled = !m_isARImageVisEnabled;
+            SetARImageViz(m_isARImageVisEnabled);
         }
 
         public void SetARPlaneViz(bool flag)
@@ -896,6 +934,8 @@ namespace NcAF
 
             foreach (var trackedImage in eventArgs.added)
             {
+                trackedImage.gameObject.SetActive(NcafMainController.Instance.m_isARImageVisEnabled);
+
                 if (trackedImage.trackingState == TrackingState.Tracking)
                 {
                     ARImageFullyTracked.Add(trackedImage.referenceImage.name, trackedImage);
@@ -954,6 +994,7 @@ namespace NcAF
         {
             foreach (var arPlane in eventArgs.added)
             {
+                arPlane.gameObject.SetActive(NcafMainController.Instance.m_isPlaneVisEnabled);
                 //if (m_allDetectedARPlanes.TryGetValue(arPlane.trackableId, out ARPlane plane))
                 //{
                 //    m_allDetectedARPlanes.Add(arPlane.trackableId, arPlane);
@@ -1067,7 +1108,7 @@ namespace NcAF
     }
 }
 
-
+/// https://github.com/Unity-Technologies/arfoundation-samples/blob/master/Assets/Scripts/SupportChecker.cs
 ///////////////////////////////// check if AR Foundation is supported
 //public class MyComponent
 //{
