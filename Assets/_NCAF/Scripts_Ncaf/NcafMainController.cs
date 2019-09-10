@@ -116,6 +116,7 @@ namespace NcAF
             }
             m_refTracker = new ReferenceTracker(m_ReferencePointManager);
 
+            // get all the Ncaf Ar Image Info Components and register them to the info dictionary
             List<NcafARImageInfo> results = new List<NcafARImageInfo>();
             var allGameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
             for (int j = 0; j < allGameObjects.Length; j++)
@@ -137,30 +138,10 @@ namespace NcAF
             SetARPlaneViz(m_isPlaneVisEnabled);
             SetRefPointVis(m_isRefPointVisEnabled);
         }
-        //IEnumerator CheckReadyStart()
-        //{
-        //    List<NcafARImageInfo> results = new List<NcafARImageInfo>();
-        //    var allGameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
-        //    for (int j = 0; j < allGameObjects.Length; j++)
-        //    {
-        //        var go = allGameObjects[j];
-        //        results.AddRange(go.GetComponentsInChildren<NcafARImageInfo>(true));
-        //    }
-
-
-
-
-        //    var infos = FindObjectsOfType<NcafARImageInfo>();
-        //    yield return new WaitForSeconds(waitTime);
-        //    print("WaitAndPrint " + Time.time);
-        //}
 
         // Update is called once per frame
         private void Update()
         {
-
-
-
             if (m_isSanityChecked == false)
             {
                 m_isSanityChecked = true;
@@ -1108,6 +1089,7 @@ namespace NcAF
     }
 }
 
+/// https://docs.unity3d.com/Packages/com.unity.xr.arfoundation@3.0/manual/
 /// https://github.com/Unity-Technologies/arfoundation-samples/blob/master/Assets/Scripts/SupportChecker.cs
 ///////////////////////////////// check if AR Foundation is supported
 //public class MyComponent

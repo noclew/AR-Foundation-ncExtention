@@ -2508,9 +2508,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a81db9d69edde3408b650d32b54a3c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_isPlaneVisEnabled: 1
-  m_isARImageModelActive: 1
-  m_isRefPointVisEnabled: 1
+  m_isPlaneVisEnabled: 0
+  m_isARImageModelActive: 0
+  m_isRefPointVisEnabled: 0
   m_isARImageVisEnabled: 0
   m_timeoutAfterTrackingIsLost: 30
   m_alignInterpolationTimer: 0.3
