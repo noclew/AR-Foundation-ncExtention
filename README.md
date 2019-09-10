@@ -1,4 +1,15 @@
+# AR Foundation noclew extention
+
+Unity 2019.2.f4
+
+AR foundation 3
+
+Stable Commit on 0910
+
+
+
 # AR Foundation Samples
+
 Example projects that use [*AR Foundation 3.0*](https://docs.unity3d.com/Packages/com.unity.xr.arfoundation@3.0/manual/index.html) and demonstrate its functionality with sample assets and components.
 
 This set of samples relies on five Unity packages:
