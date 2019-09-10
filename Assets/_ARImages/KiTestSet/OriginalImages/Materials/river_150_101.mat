@@ -26,8 +26,8 @@ Material:
     m_Floats:
     - _Brightness: 1
     - _OutlineExpand: 1
-    - _OutlineThickness: 1
+    - _OutlineThickness: 24.3
     - _Saturation: 1
     - _Transparency: 1
     m_Colors:
-    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _OutlineColor: {r: 1, g: 0, b: 0, a: 1}

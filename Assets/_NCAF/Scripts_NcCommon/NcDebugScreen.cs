@@ -1,13 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using NcAF;
 
 namespace NcCommon
 {
     public class NcDebugScreen : MonoBehaviour
     {
-        public static bool m_isEnabled;
+        public bool m_isEnabled =false;
         [Header("Parameters to display debug info")]
         public static int labelCount = 40;
         public static float labelWidthRatio = 0.9f;
@@ -29,9 +29,8 @@ namespace NcCommon
         private ScreenOrientation PREV_ORIENTATION;
 
         // On Overray Debug Printed
-        public delegate void OverrayMsgHandler(string msg, Color? color = null, GUIStyle style = null);
-
-        public static event OverrayMsgHandler OnOverrayDebugPrinted;
+        //public delegate void OverrayMsgHandler(string msg, Color? color = null, GUIStyle style = null);
+        //public static event OverrayMsgHandler OnOverrayDebugPrinted;
 
 
         #region Singleton Stuff
@@ -51,6 +50,7 @@ namespace NcCommon
             PREV_ORIENTATION = Screen.orientation;
             m_msgCount = 0;
             initiateGUIStyle();
+            UpdateDebugScreenParams();
         }
 
         private void initiateGUIStyle()
@@ -67,23 +67,10 @@ namespace NcCommon
         // Update is called once per frame
         void Update()
         {
-            // If the main controller is debugging, and the orientation has been changed, update the debug screen params.
-            if (PREV_ORIENTATION != Screen.orientation)
-            {
-                UpdateDebugScreenParams();
-                PREV_ORIENTATION = Screen.orientation;
-            }
 
         }
 
-        public void ShowDebugMsg(string msg, GUIStyle style = null, Color? color = null)
-        {
-            //print(iMsgCount);
-            if (style == null) { style = m_GUIStyle; }
-            if (color != null) { style.normal.textColor = (Color)color; }
-            GUI.Label(new Rect(LeftMargin, TopMargin + ((m_msgCount) * labelHeight), labelWidth, labelHeight), msg, m_GUIStyle);
-            m_msgCount += 1;
-        }
+
 
         public void ResetDebugScreen()
         {
@@ -105,11 +92,36 @@ namespace NcCommon
             labelHeight = (int)(Screen.height / labelCount);
             m_GUIStyle.fontSize = (int)((Screen.height / labelCount) * 0.75f);
         }
+        public void ShowDebugMsg(string msg, GUIStyle style = null, Color? color = null)
+        {
+            if (style == null) { style = m_GUIStyle; }
+            if (color != null) { style.normal.textColor = (Color)color; }
+            GUI.Label(new Rect(LeftMargin, TopMargin + ((m_msgCount) * labelHeight), labelWidth, labelHeight), msg, m_GUIStyle);
+            m_msgCount += 1;
+        }
 
         public void OnGUI()
         {
+            UpdateDebugScreenParams();
 
+            if (NcafMainController.Instance == null || !m_isEnabled) return;
+
+            NcDebugScreen.Instance.ChangeTextColor(Color.green);
+            if (NcafMainController.Instance.WorldTrackingAlignProcess == null)
+            {
+                ShowDebugMsg("no alignment interpolation process");
+            }
+            else ShowDebugMsg(NcafMainController.Instance.WorldTrackingAlignProcess.ToString());
+            ResetDebugScreen();
+        }
+        public void _ShowDebugMsg(string msg, Color? color = null, GUIStyle style = null)
+        {
+            if (msg != "") NcDebugScreen.Instance.ShowDebugMsg(msg, style, color);
         }
 
+        public void ToggleOnOff()
+        {
+            m_isEnabled = !m_isEnabled;
+        }
     }
 }

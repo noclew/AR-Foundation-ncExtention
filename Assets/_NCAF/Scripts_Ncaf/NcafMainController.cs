@@ -10,13 +10,13 @@ using System.Collections;
 
 namespace NcAF
 {
-    public enum AlIGNMODE { MANUAL, IMAGE_ONLY, TOUCH }
+    using TrackingState = UnityEngine.XR.ARSubsystems.TrackingState;
+    public enum AlIGNMODE { MANUAL, IMAGEBASED, TOUCH }
     public enum IMAGEALIGNMODE { SINGLE, INTEPOLATION }
 
     [DisallowMultipleComponent]
     [RequireComponent(typeof(ARReferencePointManager))]
     [RequireComponent(typeof(ARPlaneManager))]
-    //[RequireComponent(typeof(ARTrackedImageManager))]
     [RequireComponent(typeof(NcafUIController))]
 
 
@@ -28,36 +28,40 @@ namespace NcAF
         static NcafMainController _instance;
 
         // book keeping vars
-        Dictionary<string, NcafARImageInfo> m_ARImageInfoDict = new Dictionary<string, NcafARImageInfo>();
-        public Dictionary<string, NcafARImageInfo> m_ARImageInfos { get => m_ARImageInfoDict; }
+        public bool m_isPlaneVisEnabled = true;
+        public bool m_isARImageModelActive = true;
+        public bool m_isRefPointVisEnabled = true;
+        public bool m_isARImageVisEnabled = true;
 
-        //Dictionary<TrackableId, ARPlane> m_allDetectedARPlanes = new Dictionary<TrackableId, ARPlane>();
-        //Dictionary<TrackableId, ARPlane> m_curretlyDetectedARPlanes = new Dictionary<TrackableId, ARPlane>();
 
+
+
+        private Dictionary<string, NcafARImageInfo> m_ARImageInfoDict = new Dictionary<string, NcafARImageInfo>();
+        public Dictionary<string, NcafARImageInfo> ARImageInfoDict { get => m_ARImageInfoDict; }
+
+        // Alignment process
         IEnumerator m_worldTrackingAlignProcess = null;
+
 
         // AR foundtion managers
         ARPlaneManager m_ARPlaneManager;
         ARTrackedImageManager m_ARImageManager;
         ARReferencePointManager m_ReferencePointManager;
-
-        // Book keeping vars
-        ARTrackedImage latestTrackedARImage = null;
-        float m_distToTrackedImage = 9999999f;
-        ARPlane m_latestRefARPlane = null;
-        ARReferencePoint m_currentRefPoint = null;
         ReferenceTracker m_refTracker { get; set; }
+
+        // just a starting distance to detect the closest image
+        float m_distToTrackedImage = 9999999f;
 
         // for sanitycheck in the first frame
         bool m_isSanityChecked = false;
-        bool m_isImageManagerAvailable = false;
 
         #endregion
-
 
         #region publicMemebers
         // Main Controller Singleton Instance
         public static NcafMainController Instance { get { return _instance; } }
+        public IEnumerator WorldTrackingAlignProcess { get => m_worldTrackingAlignProcess; set => m_worldTrackingAlignProcess = value; }
+
         [Header("General App Setting")]
         public int m_timeoutAfterTrackingIsLost = 30; // screen dim-out
         public float m_alignInterpolationTimer = 2f;
@@ -67,9 +71,10 @@ namespace NcAF
 
         [Header("Exhibition Contents")]
         public Camera m_arCam;
-        public GameObject HidingBasket;
+        public Transform m_ARImageTargetModels;
         // WorldTrackingContents
         public Transform m_WorldTrackingContents;
+        public Transform m_LocalTrackingContents;
 
         [Header("Image Realignment Setting")]
         // settings for initialization
@@ -100,7 +105,6 @@ namespace NcAF
         // Start is called before the first frame update
         void Start()
         {
-
             if (OnAlignModeChanged == null) OnAlignModeChanged = new UnityEvent();
             if (OnImageAlignModeChanged == null) OnImageAlignModeChanged = new UnityEvent();
 
@@ -110,17 +114,24 @@ namespace NcAF
                 Debug.LogWarning("WARNING>> AR Camera is not properly set. Main scene camera is used for now");
             }
             m_refTracker = new ReferenceTracker(m_ReferencePointManager);
+            // set default visualization mode for image target models
         }
 
         // Update is called once per frame
         private void Update()
         {
+            // Set visualizations
+            SetARImageModelsActive(m_isARImageModelActive);
+            SetARImageViz(m_isARImageVisEnabled);
+            SetARPlaneViz(m_isPlaneVisEnabled);
+            SetRefPointVis(m_isRefPointVisEnabled);
+
             if (m_isSanityChecked == false)
             {
                 m_isSanityChecked = true;
                 SanityCheckARImageInfos();
-                ChangeAlignMode(m_alignMode);
-                ChangeImageAlignMode(m_imageAlignMode);
+                SetAlignMode(m_alignMode);
+                SetImageAlignMode(m_imageAlignMode);
             }
 
             // if the session is not tracking, dim the screen after the time-out period
@@ -133,22 +144,6 @@ namespace NcAF
             // if the session is tracking, do not dim the screen
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
-            ////////////////////////////////////////////////////////////////////////////////////////
-            foreach (KeyValuePair<string, NcafARImageInfo> info in m_ARImageInfos)
-            {
-                if (info.Value.m_isFullyTracking) print("Looking at " + info.Key);
-            }
-
-            //foreach (ARPlane arPlane in GetARPlaneCurrentlyTracking() )
-            //{
-            //    print(arPlane.name + ":" + arPlane.trackingState);
-            //}
-            //foreach(ARTrackedImage arImage in m_imageManager.trackables)
-            //{
-            //    print(arImage.name +  " - " + arImage.trackingState);
-            //}
-            //ProcessDetectedImages();
-            //Debug.Log("LOG>> # of total images registered: " + m_augementedImageDict.Count);
         }
         private void OnEnable()
         {
@@ -197,7 +192,7 @@ namespace NcAF
             return res;
         }
 
-        public void AddAugmentedImageInfo(NcafARImageInfo augmentedImageInfo)
+        public void AddARImageInfo(NcafARImageInfo augmentedImageInfo)
         {
             Debug.Log("LOG>> Adding " + augmentedImageInfo.m_augmentedImageName);
             try
@@ -213,18 +208,16 @@ namespace NcAF
 
         public void SanityCheckARImageInfos()
         {
-            ARTrackedImageManager imageManager = GetComponent<ARTrackedImageManager>();
-            if (imageManager == null)
+            TryGetComponent<ARTrackedImageManager>(out ARTrackedImageManager ARImageManager);
+            if (ARImageManager == null)
             {
-                m_alignMode = AlIGNMODE.MANUAL;
-                Debug.LogError("ERR>> there is no image manager. ");
-                m_isImageManagerAvailable = false;
+                SetAlignMode(AlIGNMODE.MANUAL);
+                Debug.LogError("ERR>> there is no image manager. Align Mode is set to Manual");
                 return;
             }
-            else m_isImageManagerAvailable = true;
 
             // check if all the AR images has AR image info components associated
-            RuntimeReferenceImageLibrary imageLib = (RuntimeReferenceImageLibrary)imageManager.referenceLibrary;
+            RuntimeReferenceImageLibrary imageLib = (RuntimeReferenceImageLibrary)ARImageManager.referenceLibrary;
 
             if (imageLib == null) print("ERR>> cannot cast image lib");
 
@@ -242,7 +235,6 @@ namespace NcAF
         //end of UpdateActivelyTrackedImage
         public Dictionary<TrackableId, ARPlane> GetActivelyTrackingPlanes(Dictionary<TrackableId, ARPlane> arPlaneList)
         {
-
             //returning dict
             Dictionary<TrackableId, ARPlane> res = new Dictionary<TrackableId, ARPlane>(arPlaneList);
 
@@ -255,7 +247,6 @@ namespace NcAF
                     deletionList.Add(item.Key);
                 }
             }
-
             //remove
             foreach (TrackableId id in deletionList)
             {
@@ -265,11 +256,10 @@ namespace NcAF
             return res;
         }
 
-        public void ProcessDetectedImages()
+        public void ProcessImageAlignment()
         {
-
-            // if the alignment mode is set to manual, return
-            if (m_alignMode == AlIGNMODE.MANUAL) return;
+            // if the alignment mode is not set to image-based, return
+            if (m_alignMode == AlIGNMODE.MANUAL || m_alignMode == AlIGNMODE.TOUCH) return;
 
             // If no closest image, return
             ARTrackedImage closestTrackedImage = GetClosestARTrackedImageFromCamera(m_arCam, GetCurrentlyTrackedARImageList());
@@ -281,49 +271,21 @@ namespace NcAF
             ARPlane coPlane = FindCoplanarPlaneFromImagePose(closestTrackedImage, trPlanes);
 
             // Alignment begins
-            switch (m_alignMode)
+            if (m_imageAlignMode == IMAGEALIGNMODE.SINGLE)
             {
-                case AlIGNMODE.IMAGE_ONLY:
-
-                    if (m_imageAlignMode == IMAGEALIGNMODE.SINGLE)
-                    {
-                        AlignModelWithSinglePos(m_WorldTrackingContents, closestTrackedImage, coPlane);
-                    }
-
-                    else if (m_imageAlignMode == IMAGEALIGNMODE.INTEPOLATION)
-                    {
-                        if (m_worldTrackingAlignProcess == null)
-                        {
-                            m_worldTrackingAlignProcess = AlignModelWithAveragedPos(m_WorldTrackingContents.transform, closestTrackedImage, coPlane);
-                            StartCoroutine(m_worldTrackingAlignProcess);
-                        }
-                    }
-                    break;
-
-
-                case AlIGNMODE.TOUCH:
-                    break;
-
-                default:
-                    break;
+                AlignModelWithSinglePos(m_WorldTrackingContents, closestTrackedImage, coPlane);
             }
-            /////////////////////////////////////////////local contents//////////////////////////
-            foreach (ARTrackedImage img in m_ARImageManager.trackables)
-            {
-                if (img.trackingState == TrackingState.Tracking)
-                {
-                    NcafMainController.Instance.m_ARImageInfos[img.referenceImage.name].m_isFullyTracking = true;
-                    NcafMainController.Instance.ShowLocalContents(img);
-                }
 
-                else
+            else if (m_imageAlignMode == IMAGEALIGNMODE.INTEPOLATION)
+            {
+                if (m_worldTrackingAlignProcess == null)
                 {
-                    NcafMainController.Instance.m_ARImageInfos[img.referenceImage.name].m_isFullyTracking = false;
-                    NcafMainController.Instance.HideLocalContents(img);
+                    m_worldTrackingAlignProcess = AlignModelWithAveragedPos(m_WorldTrackingContents.transform, closestTrackedImage, coPlane);
+                    StartCoroutine(m_worldTrackingAlignProcess);
                 }
             }
-            
-            return;        
+
+            return;
         }
 
 
@@ -403,7 +365,7 @@ namespace NcAF
             if (!isCanceled)
             {
                 Pose poseAveraged = NcHelper.AveragePose(poseList);
-                
+
                 ARReferencePoint newRefPoint;
                 if (refPlane == null)
                 {
@@ -418,6 +380,7 @@ namespace NcAF
                 if (newRefPoint == null)
                 {
                     Debug.LogWarning("WARNING>> refPoint is not ready yet");
+                    m_worldTrackingAlignProcess = null;
                     yield break;
                 }
 
@@ -433,6 +396,7 @@ namespace NcAF
 
                 Debug.Log("LOG>> interpolated adjustment finished with " + poseList.Count + " data points / ref plane: " + refPlane);
             }
+
             m_worldTrackingAlignProcess = null;
         }
 
@@ -474,7 +438,7 @@ namespace NcAF
             return closestImage;
         }
 
-        ARTrackedImage GetClosestARTrackedImageFromCamera(Camera arCam, List< ARTrackedImage> trackedImageList)
+        ARTrackedImage GetClosestARTrackedImageFromCamera(Camera arCam, List<ARTrackedImage> trackedImageList)
         {
             Dictionary<float, ARTrackedImage> debugDict = new Dictionary<float, ARTrackedImage>();
             m_distToTrackedImage = 999999f;
@@ -513,7 +477,7 @@ namespace NcAF
                 Debug.LogError("ERR>> the object " + obj.transform.name + " does not have NcGameObjectInfo, so cannot be reset parent");
                 return false;
             }
-            obj.SetParent(obj.GetComponent<NcGameObjectInfo>().m_initialParent);
+            obj.SetParent(obj.GetComponent<NcGameObjectInfo>().InitialParent);
             return true;
         }
 
@@ -637,15 +601,18 @@ namespace NcAF
                 return;
             }
 
-            List<Transform> contents = info.m_localContents;
+            info.IsLocalModelActive = true;
 
+            List<Transform> contents = info.m_localContents;
             foreach (Transform item in contents)
             {
                 MoveModelOnARImage(item, arImage);
                 item.SetParent(GetComponent<ARSessionOrigin>().trackablesParent);
                 NcHelper.ShowObject(item);
             }
+
         }
+
         public void HideLocalContents(ARTrackedImage arImage)
         {
             m_ARImageInfoDict.TryGetValue(arImage.referenceImage.name, out NcafARImageInfo info);
@@ -656,22 +623,24 @@ namespace NcAF
                 return;
             }
 
+            info.IsLocalModelActive = false;
+
             List<Transform> contents = info.m_localContents;
             foreach (Transform item in contents)
             {
-                item.SetParent(item.GetComponent<NcGameObjectInfo>().m_initialParent);
+                item.GetComponent<NcGameObjectInfo>().ResetParent();
                 NcHelper.HideObject(item);
             }
         }
 
-        public void ChangeAlignMode(AlIGNMODE mode)
+        public void SetAlignMode(AlIGNMODE mode)
         {
             m_alignMode = mode;
             Debug.Log("LOG>> Align Mode is set to " + mode);
             OnAlignModeChanged.Invoke();
         }
 
-        public void ChangeImageAlignMode(IMAGEALIGNMODE mode)
+        public void SetImageAlignMode(IMAGEALIGNMODE mode)
         {
             m_imageAlignMode = mode;
             Debug.Log("LOG>> Image Align Mode is set to " + mode);
@@ -775,11 +744,100 @@ namespace NcAF
 
         void ResetWorldTrackingContents()
         {
-            m_WorldTrackingContents.SetParent(HidingBasket.transform);
+            m_WorldTrackingContents.GetComponent<NcGameObjectInfo>().ResetParent();
+
             NcTransform originalTrans = m_WorldTrackingContents.GetComponent<NcGameObjectInfo>().OriginalTransformData;
             m_WorldTrackingContents.transform.position = originalTrans.position;
             m_WorldTrackingContents.transform.rotation = originalTrans.rotation;
             m_WorldTrackingContents.transform.localScale = (Vector3)originalTrans.localScale;
+        }
+
+        void ResetLocalTrackingContetents()
+        {
+            if (m_LocalTrackingContents == null)
+            {
+                Debug.LogWarning("WARN>> local contents are not set in the main contoller. Local contents will not be reset");
+                return;
+            }
+
+            NcGameObjectInfo[] goInfos = m_LocalTrackingContents.GetComponentsInChildren<NcGameObjectInfo>();
+
+            foreach (NcGameObjectInfo info in goInfos)
+            {
+                info.ResetParent();
+
+                NcTransform originalTrans = info.OriginalTransformData;
+                info.transform.position = originalTrans.position;
+                info.transform.rotation = originalTrans.rotation;
+                info.transform.localScale = (Vector3)originalTrans.localScale;
+            }
+        }
+
+        public NcafARImageInfo GetARImageInfo(ARTrackedImage arImage)
+        {
+            return NcafMainController.Instance.m_ARImageInfoDict[arImage.referenceImage.name];
+        }
+
+        public void TogglePlaneViz()
+        {
+            m_isPlaneVisEnabled = !m_isPlaneVisEnabled;
+        }
+        public void ToggleARImageViz()
+        {
+            m_isARImageVisEnabled = !m_isARImageVisEnabled;
+        }
+        public void ToggleARImageModelActive()
+        {
+            m_isARImageModelActive = !m_isARImageModelActive;
+            SetARImageModelsActive(m_isARImageModelActive);
+        }
+
+        public void ToggleRefPointViz()
+        {
+            m_isRefPointVisEnabled = !m_isRefPointVisEnabled;
+            SetRefPointVis(m_isRefPointVisEnabled);
+        }
+
+        public void SetARPlaneViz(bool flag)
+        {
+            if (!m_ARPlaneManager)
+            {
+                Debug.LogError("ERR>> Plane Manager is not available");
+                return;
+            }
+
+            foreach (var plane in m_ARPlaneManager.trackables)
+            {
+                plane.gameObject.SetActive(flag);
+            }
+        }
+        public void SetARImageModelsActive(bool flag)
+        {
+            if (!m_ARImageTargetModels)
+            {
+                Debug.LogWarning("WARN>> No AR Image Model is Set");
+                return;
+            }
+
+            m_ARImageTargetModels.gameObject.SetActive(flag);
+        }
+
+        public void SetRefPointVis(bool flag)
+        {
+            m_isRefPointVisEnabled = flag;
+        }
+        public void SetARImageViz(bool flag)
+        {
+            if (!m_ARImageManager)
+            {
+                Debug.LogWarning("WARN>> Image Manager is not available");
+                return;
+            }
+
+            foreach (var img in m_ARImageManager.trackables)
+            {
+                img.gameObject.SetActive(flag);
+            }
         }
 
         public void QuitApplication()
@@ -791,52 +849,83 @@ namespace NcAF
         {
             if (m_arSession == null)
             {
-                Debug.LogError("ERR>> AR Session is not connected to the main controller, so reset cannot be done");
+                Debug.LogError("ERR>> AR Session is not connected to the main controller. Reset cannot be done");
                 return;
             }
+
             ResetWorldTrackingContents();
+            ResetLocalTrackingContetents();
+
+            if (!m_ARImageTargetModels)
+            {
+                Debug.LogError("ERR>> AR Image Target models are not set in the main controller. Cannot reset AR Image Infos");
+            }
+            else
+            {
+                // reset associated ARTrackedImage of ARImage info
+                foreach (NcafARImageInfo info in m_ARImageTargetModels.GetComponentsInChildren<NcafARImageInfo>())
+                {
+                    info.ResetARImageInfo();
+                }
+            }
+
+            // deactivate image models 
+            m_isARImageModelActive = false;
+
+            // reset tracker
             m_refTracker.ResetTracker();
+
+            // reset aligning coroutine
+            m_worldTrackingAlignProcess = null;
+
+            // finally, reset app
             m_arSession.Reset();
+
             Debug.Log("LOG>> AF Session has been successfully reset");
         }
     }
 
     static class NcafImageModule
     {
-        static Dictionary<string, ARTrackedImage> imageBeingTracked = new Dictionary<string, ARTrackedImage>();
+        static Dictionary<string, ARTrackedImage> ARImageFullyTracked = new Dictionary<string, ARTrackedImage>();
 
         // this function will be called in *every Frame!!*
         public static void OnTrackedImagesChanged(ARTrackedImagesChangedEventArgs eventArgs)
         {
-            imageBeingTracked.Clear();
+            ARImageFullyTracked.Clear();
 
             foreach (var trackedImage in eventArgs.added)
             {
                 if (trackedImage.trackingState == TrackingState.Tracking)
-                    imageBeingTracked.Add(trackedImage.referenceImage.name, trackedImage);
+                {
+                    ARImageFullyTracked.Add(trackedImage.referenceImage.name, trackedImage);
+                }
+
+                // Set AR Image to the info object
+                NcafMainController.Instance.GetARImageInfo(trackedImage).ArTrackedImage = trackedImage;
+
             }
 
             foreach (var trackedImage in eventArgs.updated)
             {
                 if (trackedImage.trackingState == TrackingState.Tracking)
                 {
-                    imageBeingTracked.Add(trackedImage.referenceImage.name, trackedImage);
-                    NcafMainController.Instance.m_ARImageInfos[trackedImage.referenceImage.name].m_isFullyTracking = true;
+                    ARImageFullyTracked.Add(trackedImage.referenceImage.name, trackedImage);
                     NcafMainController.Instance.ShowLocalContents(trackedImage);
                 }
 
                 else
                 {
-                    NcafMainController.Instance.m_ARImageInfos[trackedImage.referenceImage.name].m_isFullyTracking = false;
                     NcafMainController.Instance.HideLocalContents(trackedImage);
                 }
 
             }
 
-
+            // if AR Image is removed
             foreach (var trackedImage in eventArgs.removed)
             {
-                imageBeingTracked.Remove(trackedImage.referenceImage.name);
+                ARImageFullyTracked.Remove(trackedImage.referenceImage.name);
+                NcafMainController.Instance.GetARImageInfo(trackedImage).ArTrackedImage = null;
             }
 
             // if no ncaf main controllers, skip
@@ -846,21 +935,21 @@ namespace NcAF
                 return;
             }
 
-            //if no updated images, skip updating
-            if (imageBeingTracked.Count == 0)
+            //if there are no actively tracking images, skip the image process
+            if (ARImageFullyTracked.Count == 0)
             {
-                //Debug.Log("LOG>> Tracked image = 0");
                 return;
             }
 
-            NcafMainController.Instance.ProcessDetectedImages();
-            //Debug.Log(imageBeingTracked.Count + "  has been detected");
+            NcafMainController.Instance.ProcessImageAlignment();
+
         }
     }
+
     static class NcafPlaneModule
     {
-        static Dictionary<TrackableId, ARPlane> m_allDetectedARPlanes = new Dictionary<TrackableId, ARPlane>();
-        static Dictionary<TrackableId, ARPlane> m_curretlyDetectedARPlanes = new Dictionary<TrackableId, ARPlane>();
+        //static Dictionary<TrackableId, ARPlane> m_allDetectedARPlanes = new Dictionary<TrackableId, ARPlane>();
+        //static Dictionary<TrackableId, ARPlane> m_curretlyDetectedARPlanes = new Dictionary<TrackableId, ARPlane>();
         public static void OnPlaneChanged(ARPlanesChangedEventArgs eventArgs)
         {
             foreach (var arPlane in eventArgs.added)
@@ -979,26 +1068,27 @@ namespace NcAF
 }
 
 
-public class MyComponent
-{
-    [SerializeField] ARSession m_Session;
+///////////////////////////////// check if AR Foundation is supported
+//public class MyComponent
+//{
+//    [SerializeField] ARSession m_Session;
 
-    IEnumerator Start()
-    {
-        if ((ARSession.state == ARSessionState.None ||
-            ARSession.state == ARSessionState.CheckingAvailability))
-        {
-            yield return ARSession.CheckAvailability();
-        }
+//    IEnumerator Start()
+//    {
+//        if ((ARSession.state == ARSessionState.None ||
+//            ARSession.state == ARSessionState.CheckingAvailability))
+//        {
+//            yield return ARSession.CheckAvailability();
+//        }
 
-        if (ARSession.state == ARSessionState.Unsupported)
-        {
-            // Start some fallback experience for unsupported devices
-        }
-        else
-        {
-            // Start the AR session
-            m_Session.enabled = true;
-        }
-    }
-}
+//        if (ARSession.state == ARSessionState.Unsupported)
+//        {
+//            // Start some fallback experience for unsupported devices
+//        }
+//        else
+//        {
+//            // Start the AR session
+//            m_Session.enabled = true;
+//        }
+//    }
+//}

@@ -24,12 +24,12 @@ namespace NcAF
 
             if (m_AlignModeDropdown != null)
             {
-                m_AlignModeDropdown.onValueChanged.AddListener(DR_ChangeAlignModeHandler);
+                m_AlignModeDropdown.onValueChanged.AddListener(DropDownChangeAlignModeHandler);
             }
 
             if (m_ImageAlignModeDropdown != null)
             {
-                m_ImageAlignModeDropdown.onValueChanged.AddListener(DR_ChangeImageAlignnModeHandler);
+                m_ImageAlignModeDropdown.onValueChanged.AddListener(DropDownChangeImageAlignnModeHandler);
             }
         }
 
@@ -49,47 +49,47 @@ namespace NcAF
             m_debugHierarchyCanvas.gameObject.SetActive(!m_debugHierarchyCanvas.gameObject.activeSelf);
         }
 
-        public void DR_ChangeAlignModeHandler(int index)
+        public void DropDownChangeAlignModeHandler(int index)
         {
             if (index == 0)
             {
                 if (NcafMainController.Instance.m_alignMode != AlIGNMODE.MANUAL)
-                    NcafMainController.Instance.ChangeAlignMode(AlIGNMODE.MANUAL);
+                    NcafMainController.Instance.SetAlignMode(AlIGNMODE.MANUAL);
             }
             if (index == 1)
             {
-                if (NcafMainController.Instance.m_alignMode != AlIGNMODE.IMAGE_ONLY)
-                    NcafMainController.Instance.ChangeAlignMode(AlIGNMODE.IMAGE_ONLY);
+                if (NcafMainController.Instance.m_alignMode != AlIGNMODE.IMAGEBASED)
+                    NcafMainController.Instance.SetAlignMode(AlIGNMODE.IMAGEBASED);
             }
             if (index == 2)
             {
                 if (NcafMainController.Instance.m_alignMode != AlIGNMODE.TOUCH)
-                    NcafMainController.Instance.ChangeAlignMode(AlIGNMODE.TOUCH);
+                    NcafMainController.Instance.SetAlignMode(AlIGNMODE.TOUCH);
             }
         }
 
-        public void DR_ChangeImageAlignnModeHandler(int index)
+        public void DropDownChangeImageAlignnModeHandler(int index)
         {
             if (index == 0)
             {
                 if (NcafMainController.Instance.m_imageAlignMode != IMAGEALIGNMODE.SINGLE)
-                    NcafMainController.Instance.ChangeImageAlignMode(IMAGEALIGNMODE.SINGLE);
+                    NcafMainController.Instance.SetImageAlignMode(IMAGEALIGNMODE.SINGLE);
             }
             if (index == 1)
             {
                 if (NcafMainController.Instance.m_imageAlignMode != IMAGEALIGNMODE.INTEPOLATION)
-                    NcafMainController.Instance.ChangeImageAlignMode(IMAGEALIGNMODE.INTEPOLATION);
+                    NcafMainController.Instance.SetImageAlignMode(IMAGEALIGNMODE.INTEPOLATION);
             }
         }
 
-        public void AlignmentModeChangeListner()
+        public void AlignmentModeChangeListener()
         {
             switch (NcafMainController.Instance.m_alignMode)
             {
                 case AlIGNMODE.MANUAL:
                     m_AlignModeDropdown.value = 0;
                     break;
-                case AlIGNMODE.IMAGE_ONLY:
+                case AlIGNMODE.IMAGEBASED:
                     m_AlignModeDropdown.value = 1;
                     break;
                 case AlIGNMODE.TOUCH:
@@ -117,7 +117,6 @@ namespace NcAF
                     break;
             }
         }
-
-
+        
     }
 }

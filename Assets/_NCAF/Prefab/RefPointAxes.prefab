@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4940852310305428}
   - component: {fileID: 114113636911863978}
   m_Layer: 0
-  m_Name: TriAxes
+  m_Name: RefPointAxes
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -330,8 +330,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3706516806572684858}
+  - component: {fileID: 5310701420576952583}
   m_Layer: 0
-  m_Name: TriAxes
+  m_Name: Axes
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -354,3 +355,15 @@ Transform:
   m_Father: {fileID: 4940852310305428}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5310701420576952583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5163182468810263432}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac1ee3203a803df4c900828b168d0f82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

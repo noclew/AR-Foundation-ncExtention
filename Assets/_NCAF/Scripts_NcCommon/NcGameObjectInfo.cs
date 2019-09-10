@@ -7,19 +7,33 @@ public class NcGameObjectInfo : MonoBehaviour
 {
     // Initial transform parameters in global space
     public NcTransform OriginalTransformData;
-    public bool m_initialActiveState = true;
-    
-    private bool IsfirstFrame = true;
-    public Transform m_initialParent { get; set; }
+    public Transform InitialParent { get; set; }
     // Start is called before the first frame update
     private void Awake()
     {
         OriginalTransformData = new NcTransform(transform);
-        m_initialParent = transform.parent;
+        InitialParent = transform.parent;
     }
+
     private void Start()
     {
-       
+
+    }
+
+
+    private void Update()
+    {
+
+    }
+
+    public void ResetParent()
+    {
+        transform.SetParent(InitialParent);
+    }
+    public void SetActive(bool flag)
+    {
+        gameObject.SetActive(flag);
+        return;
     }
 
     public override string ToString()
@@ -33,17 +47,6 @@ public class NcGameObjectInfo : MonoBehaviour
             "LocalScale: " + OriginalTransformData.localScale + "\n";
         return msg;
     }
-
-    private void Update()
-    {
-        if(IsfirstFrame && !m_initialActiveState)
-        {
-            this.gameObject.SetActive(m_initialActiveState); 
-            Debug.Log("LOG>> " + transform.name + " has been initiated to be inactive");
-            IsfirstFrame = false;
-        }
-    }
-
 }
 
 
@@ -110,12 +113,11 @@ public struct NcTransform
         newScale.z = originalScale.y;
         newLocalScale.y = originalLocalScale.z;
         newLocalScale.z = originalLocalScale.y;
-        
+
         NcTransform res = new NcTransform(this);
         res.lossyScale = newScale;
         res.localScale = newLocalScale;
         return res;
     }
-
 
 }
