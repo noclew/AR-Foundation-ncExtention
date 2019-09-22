@@ -7,17 +7,22 @@ using UnityEngine;
 
 public static class MenuItemBatch
 {
-    private const string jsonPath = "sample.json";
+    // json Asset
+    private const string jsonPath = "_ARImages/190921ImageJSon.txt";
     private const string containerName = "--ARImageTargetInfo";
+
+    // default Material to use for the target visuals
     private const string materialPath = "Assets/_NCAF/BatchProcessScript/Imageframe.mat";
 
     [UnityEditor.MenuItem ("NCAF/Process Batch AR Images")]
     public static void Process ()
     {
-        var sourceMaterial = AssetDatabase.LoadAssetAtPath<Material> (materialPath);
-        var json = File.ReadAllText (Application.dataPath + "/" + jsonPath);
-        var imagesframes = JsonUtility.FromJson<Imageframes> (json);
+        // default Material for image visuals
+        Material sourceMaterial = AssetDatabase.LoadAssetAtPath<Material> (materialPath);
+        string json = File.ReadAllText (Application.dataPath + "/" + jsonPath);
+        Imageframes imagesframes = JsonUtility.FromJson<Imageframes> (json);
 
+        // if no container game object exists, make one
         var container = GameObject.Find (containerName);
         if (container == null)
             container = new GameObject (containerName);
@@ -96,7 +101,7 @@ public static class MenuItemBatch
 
             var quadGameObjectTransform = quadGameObject.transform;
             quadGameObjectTransform.localPosition = center;
-            quadGameObjectTransform.localRotation = Quaternion.FromToRotation (Vector3.left, vectorW) *
+            quadGameObjectTransform.localRotation = Quaternion.FromToRotation (Vector3.right, vectorW) *
                                                     Quaternion.FromToRotation (Vector3.forward, vectorH);
 //            quadGameObjectTransform.localRotation = Quaternion.FromToRotation (Vector3.up, up);
             quadGameObjectTransform.localScale = new Vector3 (vectorW.magnitude, 1f, vectorH.magnitude);
